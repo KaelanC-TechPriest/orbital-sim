@@ -2,7 +2,7 @@ from math import pow, sqrt
 import time
 
 MAX_SPACE_X = 100
-MAX_SPACE_Y = 500
+MAX_SPACE_Y = 300
 TIME_STEP = 1
 
 class Body:
@@ -13,6 +13,7 @@ class Body:
     velocity_y = 0.
     mass = 0
     character = ""
+    is_interstellar = False
 
     def __init__(self, mass, x, y, v_x, v_y, character):
         self.mass = mass
@@ -27,41 +28,82 @@ class Body:
         self.y += self.velocity_y * TIME_STEP
         print(f"x: {self.x}, y: {self.y}")
         print(f"v_x: {self.velocity_x}, v_y: {self.velocity_y}")
-        if (self.x > MAX_SPACE_X or self.x < 0):
-            raise ValueError("Out of bounds")
-        if (self.y > MAX_SPACE_Y or self.y < 0):
-            raise ValueError("Out of bounds")
+        if (self.x > MAX_SPACE_X or self.x < 0 or self.y > MAX_SPACE_Y or self.y < 0):
+            return False
+        else:
+            return True
 
 def accel_g(M, r):
-    const_G = pow(10, -3)
+    const_G = pow(10, -4)
     return const_G * M / pow(r, 2)
 
 def main():
     bodies = [
         Body(
-            2. * pow(10,4),
+            4. * pow(10,5),
             MAX_SPACE_X / 2,
             MAX_SPACE_Y / 2,
             0,
             0,
-            "@"
+            # colored character @
+            "\u001b[33m\u2588\u001b[0m"
             ), 
+
         Body(
-            1.0 * pow(10,2),
+            1.0 * pow(10,4),
             MAX_SPACE_X / 2,
             MAX_SPACE_Y / 2 - 10,
             1,
             0,
-            "o"
-            )
+            # colored character o
+            "\u001b[32m\u2588\u001b[0m"
+            ),
+
+        Body(
+            1.0 * pow(10,4),
+            MAX_SPACE_X / 2,
+            MAX_SPACE_Y / 2 + 20,
+            -1,
+            0,
+            # colored character 0
+            "\u001b[31m\u2588\u001b[0m"
+            ), 
+
+        Body(
+            1.0 * pow(10,4),
+            MAX_SPACE_X / 2,
+            MAX_SPACE_Y / 2 - 20,
+            1,
+            0,
+            # colored character o
+            "\u001b[32m\u2588\u001b[0m"
+            ),
+
+        Body(
+            1.0 * pow(10,4),
+            MAX_SPACE_X / 2,
+            MAX_SPACE_Y / 2 + 30,
+            -1,
+            0,
+            # colored character o
+            "\u001b[20m\u2588\u001b[0m"
+            ),
+
         ]
 
     while True:
-        GRID = [["." for _ in range(MAX_SPACE_X)] for _ in range(MAX_SPACE_Y)]
+        GRID = [[" " for _ in range(MAX_SPACE_X)] for _ in range(MAX_SPACE_Y)]
 
         print("\x1B[2J\x1B[H")
         for body in bodies:
-            GRID[int(body.y)][int(body.x)] = body.character
+            if (body.is_interstellar): continue
+            body_y = int(body.y)
+            body_x = int(body.x)
+            GRID[body_y][body_x] = body.character
+            #GRID[body_y+1][body_x] = body.character
+            #GRID[body_y-1][body_x] = body.character
+            #GRID[body_y][body_x+1] = body.character
+            #GRID[body_y][body_x-1] = body.character
 
         for i in range(MAX_SPACE_X):
             for j in range(MAX_SPACE_Y):
@@ -71,6 +113,8 @@ def main():
         # calculate accelerations
         for i in range(len(bodies)):
             body1 = bodies[i]
+            if (body1.is_interstellar): continue
+
             accel_x = 0
             accel_y = 0
             for j in range(len(bodies)):
@@ -78,6 +122,8 @@ def main():
                 if (i == j): continue
 
                 body2 = bodies[j]
+                if (body2.is_interstellar): continue
+
                 dist_x = body1.x - body2.x
                 dist_y = body1.y - body2.y
                 distance = sqrt(pow(dist_x, 2) + pow(dist_y, 2))
@@ -86,12 +132,13 @@ def main():
 
                 accel_x -= acceleration * dist_x / distance
                 accel_y -= acceleration * dist_y / distance
-                print(f"Accel: {acceleration} {accel_x} {accel_y}")
+                print(f"Accel: {acceleration} x: {accel_x} y: {accel_y}")
 
             body1.velocity_x += accel_x * TIME_STEP
             body1.velocity_y += accel_y * TIME_STEP
 
-            body1.move()
+            in_bounds = body1.move()
+            if (not in_bounds): body1.is_interstellar = True
 
 
         time.sleep(.5)
